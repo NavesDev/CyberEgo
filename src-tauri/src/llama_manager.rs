@@ -1,12 +1,17 @@
 use anyhow::{Context, Result};
 use std::process::{Command, Stdio};
+use std::sync::Mutex;
 use log::{info, error, warn};
 
-pub struct LlamaManager;
+pub struct LlamaManager {
+    ollama_pid: Mutex<Option<u32>>,
+}
 
 impl LlamaManager {
     pub fn new() -> Self {
-        LlamaManager
+        LlamaManager {
+            ollama_pid: Mutex::new(None),
+        }
     }
 
     /// Check if Ollama is installed on the system
@@ -72,13 +77,73 @@ impl LlamaManager {
             .spawn()
             .context("Failed to start Ollama server")?;
 
-        println!("  ✓ Ollama started with PID: {}", child.id());
-        info!("Ollama started with PID: {}", child.id());
+        let pid = child.id();
+        println!("  ✓ Ollama started with PID: {}", pid);
+        info!("Ollama started with PID: {}", pid);
+
+        // Store the PID so we can kill it later if needed
+        let mut stored_pid = self.ollama_pid.lock().unwrap();
+        *stored_pid = Some(pid);
 
         // Small pause to let the server initialize
         std::thread::sleep(std::time::Duration::from_secs(2));
 
         Ok(())
+    }
+
+    /// Stop Ollama server if it was started by us
+    pub fn cleanup(&self) {
+        let mut pid_guard = self.ollama_pid.lock().unwrap();
+
+        if let Some(pid) = pid_guard.take() {
+            println!("  • Stopping Ollama server (PID: {})...", pid);
+            info!("Stopping Ollama server started by this application");
+
+            // Kill the process using system commands
+            #[cfg(unix)]
+            {
+                match Command::new("kill")
+                    .arg(pid.to_string())
+                    .status()
+                {
+                    Ok(status) => {
+                        if status.success() {
+                            println!("  ✓ Ollama server stopped successfully");
+                            info!("Ollama server stopped successfully");
+                        } else {
+                            println!("  ✗ Failed to stop Ollama");
+                            error!("Failed to stop Ollama server");
+                        }
+                    }
+                    Err(e) => {
+                        println!("  ✗ Failed to stop Ollama: {}", e);
+                        error!("Failed to stop Ollama server: {}", e);
+                    }
+                }
+            }
+
+            #[cfg(windows)]
+            {
+                match Command::new("taskkill")
+                    .args(&["/PID", &pid.to_string(), "/F"])
+                    .status()
+                {
+                    Ok(status) => {
+                        if status.success() {
+                            println!("  ✓ Ollama server stopped successfully");
+                            info!("Ollama server stopped successfully");
+                        } else {
+                            println!("  ✗ Failed to stop Ollama");
+                            error!("Failed to stop Ollama server");
+                        }
+                    }
+                    Err(e) => {
+                        println!("  ✗ Failed to stop Ollama: {}", e);
+                        error!("Failed to stop Ollama server: {}", e);
+                    }
+                }
+            }
+        }
     }
 
     /// Initialize Ollama (check and start if necessary)
@@ -102,5 +167,11 @@ impl LlamaManager {
         self.start_ollama()?;
 
         Ok(())
+    }
+}
+
+impl Drop for LlamaManager {
+    fn drop(&mut self) {
+        self.cleanup();
     }
 }

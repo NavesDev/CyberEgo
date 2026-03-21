@@ -2,6 +2,8 @@ mod llama_manager;
 
 use llama_manager::LlamaManager;
 use log::{info, error};
+use std::sync::Arc;
+use tauri::Manager;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -18,7 +20,7 @@ pub fn run() {
     info!("Starting CyberEgo...");
 
     // Initialize Ollama
-    let llama_manager = LlamaManager::new();
+    let llama_manager = Arc::new(LlamaManager::new());
     match llama_manager.initialize() {
         Ok(_) => {
             println!("✓ Ollama initialized successfully!");
@@ -32,9 +34,31 @@ pub fn run() {
         }
     }
 
-    tauri::Builder::default()
+    // Clone for window event handler
+    let manager_for_window = Arc::clone(&llama_manager);
+
+    let result = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .setup(move |app| {
+            // Setup window close handler
+            if let Some(window) = app.get_webview_window("main") {
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::Destroyed = event {
+                        println!("👋 Window closing, cleaning up...");
+                        manager_for_window.cleanup();
+                    }
+                });
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![greet])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .run(tauri::generate_context!());
+
+    // Cleanup on normal exit
+    println!("👋 Shutting down CyberEgo...");
+    llama_manager.cleanup();
+
+    if let Err(e) = result {
+        eprintln!("Error running application: {}", e);
+    }
 }
