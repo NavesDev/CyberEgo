@@ -126,7 +126,6 @@
 
 .settings-option.active {
   background: var(--accent-color);
-  color: white;
   border-color: var(--accent-color);
 }
 
@@ -140,4 +139,5 @@
 
 .settings-option-label {
   flex: 1;
+  
 }
