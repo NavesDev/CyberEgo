@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createStorage, STORAGE_KEYS } from '../utils/storage';
 
 type Theme = 'light' | 'dark' | 'system';
 type ResolvedTheme = 'light' | 'dark';
@@ -25,10 +26,21 @@ const resolveTheme = (theme: Theme): ResolvedTheme => {
   return theme;
 };
 
+// Validation function for theme
+const isValidTheme = (value: unknown): value is Theme => {
+  return typeof value === 'string' && ['light', 'dark', 'system'].includes(value);
+};
+
+// Create storage manager for theme
+const themeStorage = createStorage<Theme>({
+  key: STORAGE_KEYS.THEME,
+  defaultValue: 'system',
+  validate: isValidTheme,
+});
+
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
-    const stored = localStorage.getItem('theme') as Theme;
-    return stored || 'system';
+    return themeStorage.get();
   });
 
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() =>
@@ -42,8 +54,8 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     // Apply theme to document
     document.documentElement.setAttribute('data-theme', resolved);
 
-    // Save to localStorage
-    localStorage.setItem('theme', theme);
+    // Persist theme
+    themeStorage.set(theme);
   }, [theme]);
 
   useEffect(() => {
