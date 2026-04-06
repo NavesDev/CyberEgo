@@ -1,8 +1,28 @@
 {
   "name": "cyberego",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
+  "description": "A local-first AI interaction platform for philosophical debates, ethical dilemmas, and persona customization",
+  "author": "NavesDev",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NavesDev/CyberEgo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NavesDev/CyberEgo/issues"
+  },
+  "homepage": "https://github.com/NavesDev/CyberEgo#readme",
+  "keywords": [
+    "tauri",
+    "ai",
+    "ollama",
+    "philosophy",
+    "debate",
+    "ethics",
+    "privacy"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

@@ -1,8 +1,13 @@
 [package]
 name = "cyberego"
-version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+version = "1.0.0"
+description = "A local-first AI interaction platform for philosophical debates, ethical dilemmas, and persona customization"
+authors = ["NavesDev <naves@navesdev.com>"]
+license = "MIT"
+repository = "https://github.com/NavesDev/CyberEgo"
+homepage = "https://github.com/NavesDev/CyberEgo"
+keywords = ["tauri", "ai", "ollama", "philosophy", "ethics"]
+categories = ["gui", "command-line-utilities"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
